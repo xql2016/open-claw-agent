@@ -1,17 +1,16 @@
-import { Type } from "@sinclair/typebox";
 import type { AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type } from "@sinclair/typebox";
 import fs from "node:fs/promises";
 import path from "node:path";
 import { jsonResult, readStringParam, type AnyAgentTool } from "./common.js";
 
 /**
  * Document Generator Tool
- * 
+ *
  * Generate Markdown and Word documents from structured data.
  */
 
 type DocumentConfig = {
-  enabled?: boolean;
   outputDir?: string;
 };
 
@@ -29,34 +28,34 @@ async function generateMarkdown(params: {
   outputPath: string;
 }): Promise<{ filepath: string; size: number }> {
   const { title, content, tables = [], outputPath } = params;
-  
+
   let markdown = `# ${title}\n\n`;
   markdown += `${content}\n\n`;
-  
+
   // Add tables
   for (const table of tables) {
     markdown += `## ${table.title}\n\n`;
-    
+
     // Table headers
-    markdown += `| ${table.headers.join(' | ')} |\n`;
-    markdown += `| ${table.headers.map(() => '---').join(' | ')} |\n`;
-    
+    markdown += `| ${table.headers.join(" | ")} |\n`;
+    markdown += `| ${table.headers.map(() => "---").join(" | ")} |\n`;
+
     // Table rows
     for (const row of table.rows) {
-      markdown += `| ${row.join(' | ')} |\n`;
+      markdown += `| ${row.join(" | ")} |\n`;
     }
-    markdown += '\n';
+    markdown += "\n";
   }
-  
+
   // Add timestamp
   markdown += `\n---\n\n*Generated: ${new Date().toISOString()}*\n`;
-  
+
   // Write file
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
-  await fs.writeFile(outputPath, markdown, 'utf-8');
-  
+  await fs.writeFile(outputPath, markdown, "utf-8");
+
   const stats = await fs.stat(outputPath);
-  
+
   return {
     filepath: outputPath,
     size: stats.size,
@@ -77,86 +76,87 @@ async function generateWord(params: {
   outputPath: string;
 }): Promise<{ filepath: string; size: number }> {
   const { title, content, tables = [], outputPath } = params;
-  
+
   // Lazy load docx library
-  const { Document, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType } = await import('docx');
-  
+  const { Document, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType } =
+    await import("docx");
+
   const children: any[] = [];
-  
+
   // Title
   children.push(
     new Paragraph({
       text: title,
-      heading: 'Heading1',
+      heading: "Heading1",
       alignment: AlignmentType.CENTER,
-    })
+    }),
   );
-  
+
   // Content (split by paragraphs)
-  const paragraphs = content.split('\n\n');
+  const paragraphs = content.split("\n\n");
   for (const para of paragraphs) {
     if (para.trim()) {
       children.push(
         new Paragraph({
           text: para.trim(),
           spacing: { after: 200 },
-        })
+        }),
       );
     }
   }
-  
+
   // Tables
   for (const tableData of tables) {
     // Table title
     children.push(
       new Paragraph({
         text: tableData.title,
-        heading: 'Heading2',
+        heading: "Heading2",
         spacing: { before: 400, after: 200 },
-      })
+      }),
     );
-    
+
     // Table
     const tableRows = [
       // Header row
       new TableRow({
         children: tableData.headers.map(
-          header =>
+          (header) =>
             new TableCell({
               children: [new Paragraph({ text: header, bold: true })],
-            })
+            }),
         ),
       }),
       // Data rows
       ...tableData.rows.map(
-        row =>
+        (row) =>
           new TableRow({
             children: row.map(
-              cell =>
+              (cell) =>
                 new TableCell({
                   children: [new Paragraph({ text: cell })],
-                })
+                }),
             ),
-          })
+          }),
       ),
     ];
-    
+
     children.push(
       new Table({
         rows: tableRows,
-      })
+      }),
     );
   }
-  
+
   // Footer with timestamp
   children.push(
     new Paragraph({
       text: `Generated: ${new Date().toLocaleString()}`,
       spacing: { before: 400 },
       alignment: AlignmentType.RIGHT,
-    })
+    }),
   );
-  
+
   // Create document
   const doc = new Document({
     sections: [
@@ -165,16 +165,16 @@ async function generateWord(params: {
       },
     ],
   });
-  
+
   // Write file
-  const { Packer } = await import('docx');
+  const { Packer } = await import("docx");
   const buffer = await Packer.toBuffer(doc);
-  
+
   await fs.mkdir(path.dirname(outputPath), { recursive: true });
   await fs.writeFile(outputPath, buffer);
-  
+
   const stats = await fs.stat(outputPath);
-  
+
   return {
     filepath: outputPath,
     size: stats.size,
@@ -189,9 +189,9 @@ export function createDocumentGeneratorTool(options: {
   workspaceDir: string;
 }): AnyAgentTool {
   const { config, workspaceDir } = options;
-  
-  const defaultOutputDir = config?.outputDir ?? path.join(workspaceDir, 'reports');
-  
+
+  const defaultOutputDir = config?.outputDir ?? path.join(workspaceDir, "reports");
+
   return {
     name: "generate_document",
     description: `Generate Markdown or Word documents from structured data.
@@ -203,12 +203,9 @@ Supports:
 - Automatic timestamps
 
 Output directory: ${defaultOutputDir}`,
-    
+
     schema: Type.Object({
-      format: Type.Union([
-        Type.Literal("markdown"),
-        Type.Literal("word"),
-      ], {
+      format: Type.Union([Type.Literal("markdown"), Type.Literal("word")], {
         description: "Document format: 'markdown' or 'word'",
       }),
       filename: Type.String({
@@ -220,48 +217,51 @@ Output directory: ${defaultOutputDir}`,
       content: Type.String({
         description: "Main document content (paragraphs separated by double newlines)",
       }),
-      tables: Type.Optional(Type.Array(Type.Object({
-        title: Type.String({ description: "Table title" }),
-        headers: Type.Array(Type.String(), { description: "Column headers" }),
-        rows: Type.Array(Type.Array(Type.String()), { description: "Data rows" }),
-      }), {
-        description: "Tables to include in the document",
-      })),
+      tables: Type.Optional(
+        Type.Array(
+          Type.Object({
+            title: Type.String({ description: "Table title" }),
+            headers: Type.Array(Type.String(), { description: "Column headers" }),
+            rows: Type.Array(Type.Array(Type.String()), { description: "Data rows" }),
+          }),
+          {
+            description: "Tables to include in the document",
+          },
+        ),
+      ),
     }),
-    
+
     async execute(params): Promise<AgentToolResult<unknown>> {
-      const format = readStringParam(params, 'format', { required: true });
-      const filename = readStringParam(params, 'filename', { required: true });
-      const title = readStringParam(params, 'title', { required: true });
-      const content = readStringParam(params, 'content', { required: true });
-      
+      const format = readStringParam(params, "format", { required: true });
+      const filename = readStringParam(params, "filename", { required: true });
+      const title = readStringParam(params, "title", { required: true });
+      const content = readStringParam(params, "content", { required: true });
+
       // Parse tables if provided
       const tablesRaw = params.tables;
       const tables = Array.isArray(tablesRaw)
         ? tablesRaw.map((t: any) => ({
-            title: String(t.title ?? 'Table'),
+            title: String(t.title ?? "Table"),
             headers: Array.isArray(t.headers) ? t.headers.map(String) : [],
             rows: Array.isArray(t.rows)
-              ? t.rows.map((row: any) =>
-                  Array.isArray(row) ? row.map(String) : []
-                )
+              ? t.rows.map((row: any) => (Array.isArray(row) ? row.map(String) : []))
               : [],
           }))
         : [];
-      
+
       const outputPath = path.resolve(defaultOutputDir, filename);
-      
+
       try {
         let result: { filepath: string; size: number };
-        
-        if (format === 'markdown') {
+
+        if (format === "markdown") {
           result = await generateMarkdown({
             title,
             content,
             tables,
             outputPath,
           });
-        } else if (format === 'word') {
+        } else if (format === "word") {
           result = await generateWord({
             title,
             content,
@@ -271,7 +271,7 @@ Output directory: ${defaultOutputDir}`,
         } else {
           throw new Error(`Unsupported format: ${format}`);
         }
-        
+
         return jsonResult({
           success: true,
           message: `Document generated successfully`,
@@ -279,7 +279,6 @@ Output directory: ${defaultOutputDir}`,
           size: result.size,
           format,
         });
-        
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return jsonResult({

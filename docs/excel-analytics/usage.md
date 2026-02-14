@@ -15,6 +15,7 @@ Excel Analytics Tool 提供了高效的 Excel 文件分析能力，采用**采�
 Excel 文件分析工具，支持三种操作：
 
 #### 操作：info
+
 获取 Excel 文件元信息（不读取数据）
 
 ```json
@@ -25,6 +26,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 返回：
+
 ```json
 {
   "totalRows": 500000,
@@ -35,6 +37,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 #### 操作：sample
+
 采样读取前 N 行数据
 
 ```json
@@ -47,6 +50,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 返回：
+
 ```json
 {
   "totalRows": 500000,
@@ -58,7 +62,9 @@ Excel 文件分析工具，支持三种操作：
     "地区": "string",
     "产品": "string"
   },
-  "preview": [ /* 前5行数据 */ ],
+  "preview": [
+    /* 前5行数据 */
+  ],
   "statistics": {
     "金额": {
       "count": 1000,
@@ -71,6 +77,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 #### 操作：calculate
+
 使用 SQL 在全量数据上执行计算
 
 ```json
@@ -82,6 +89,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 返回：
+
 ```json
 {
   "metrics": [
@@ -117,6 +125,7 @@ Excel 文件分析工具，支持三种操作：
 ```
 
 返回：
+
 ```json
 {
   "success": true,
@@ -143,10 +152,10 @@ Excel 文件分析工具，支持三种操作：
    "数据包含日期、金额、地区、产品四列，
     要计算各地区的月度销售额，对吗？"
    ↓
-5. [Tool] excel_analytics { 
+5. [Tool] excel_analytics {
      action: "calculate",
-     sql: "SELECT 地区, strftime('%Y-%m', 日期) as 月份, 
-           SUM(金额) as 月销售额 FROM ? 
+     sql: "SELECT 地区, strftime('%Y-%m', 日期) as 月份,
+           SUM(金额) as 月销售额 FROM ?
            GROUP BY 地区, 月份"
    }
    → 在全量50万行上执行计算，返回聚合结果
@@ -163,10 +172,10 @@ Excel 文件分析工具，支持三种操作：
 
 ### 对比：全量读取 vs 采样策略
 
-| 方案 | 读取行数 | Token 消耗 | 成本（Sonnet） |
-|------|---------|-----------|---------------|
-| ❌ 全量读取 | 500,000 | ~100K | $0.30 |
-| ✅ 采样策略 | 1,000 | ~6K | $0.02 |
+| 方案        | 读取行数 | Token 消耗 | 成本（Sonnet） |
+| ----------- | -------- | ---------- | -------------- |
+| ❌ 全量读取 | 500,000  | ~100K      | $0.30          |
+| ✅ 采样策略 | 1,000    | ~6K        | $0.02          |
 
 **节省 94% Token！**
 
@@ -179,6 +188,7 @@ Excel 文件分析工具，支持三种操作：
 ## SQL 查询示例
 
 ### 基础聚合
+
 ```sql
 -- 各地区总销售额
 SELECT 地区, SUM(金额) as 总额, COUNT(*) as 订单数
@@ -188,9 +198,10 @@ ORDER BY 总额 DESC
 ```
 
 ### 时间维度分析
+
 ```sql
 -- 月度销售趋势
-SELECT 
+SELECT
   strftime('%Y-%m', 日期) as 月份,
   SUM(金额) as 月销售额,
   AVG(金额) as 平均订单额
@@ -200,9 +211,10 @@ ORDER BY 月份
 ```
 
 ### 多维度分析
+
 ```sql
 -- 地区 × 产品 销售矩阵
-SELECT 
+SELECT
   地区,
   产品,
   SUM(金额) as 销售额,
@@ -213,6 +225,7 @@ ORDER BY 销售额 DESC
 ```
 
 ### Top N 查询
+
 ```sql
 -- Top 10 畅销产品
 SELECT 产品, SUM(金额) as 总额
@@ -234,58 +247,67 @@ LIMIT 10
         excel: {
           enabled: true,
           sampling: {
-            defaultRows: 1000,  // 默认采样行数
-            maxRows: 5000       // 最大采样行数
+            defaultRows: 1000, // 默认采样行数
+            maxRows: 5000, // 最大采样行数
           },
           calculation: {
-            timeout: 300,       // 计算超时（秒）
-            chunkSize: 10000    // 分块处理大小
-          }
+            timeout: 300, // 计算超时（秒）
+            chunkSize: 10000, // 分块处理大小
+          },
         },
         document: {
           enabled: true,
-          outputDir: "~/.openclaw/workspace/reports"
-        }
-      }
-    }
-  }
+          outputDir: "~/.openclaw/workspace/reports",
+        },
+      },
+    },
+  },
 }
 ```
 
 ## 注意事项
 
 ### 性能考虑
+
 - **大文件**：50万行以下流畅运行
 - **超大文件**：百万级以上建议先在外部工具预处理
 - **内存**：全量计算时数据加载到内存，注意内存限制
 
 ### SQL 语法
+
 - 使用 **AlaSQL** 语法（类似标准 SQL）
 - 表名用 `?` 表示（代表 Excel 数据）
 - 支持大部分标准 SQL 函数
 
 ### 文档格式
+
 - **Markdown**：适合纯文本报告，文件小，易于版本控制
 - **Word**：适合正式报告，支持更丰富的格式
 
 ## 故障排查
 
 ### 问题：文件找不到
+
 ```
 Error: Excel file not found: sales_data.xlsx
 ```
+
 **解决**：使用相对于工作区的路径，或绝对路径
 
 ### 问题：列名不匹配
+
 ```
 Error: Column "金额" not found
 ```
+
 **解决**：先用 `sample` 查看实际列名（可能有空格或特殊字符）
 
 ### 问题：SQL 语法错误
+
 ```
 Error: Syntax error in SQL query
 ```
+
 **解决**：检查 SQL 语法，表名用 `?`，字符串用单引号
 
 ## 更多示例

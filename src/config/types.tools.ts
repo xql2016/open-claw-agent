@@ -458,4 +458,24 @@ export type ToolsConfig = {
       deny?: string[];
     };
   };
+  /** Excel analytics tool configuration. */
+  excel?: {
+    sampling?: {
+      /** Default number of rows to sample (default: 1000). */
+      defaultRows?: number;
+      /** Maximum number of rows to sample (default: 5000). */
+      maxRows?: number;
+    };
+    calculation?: {
+      /** Timeout for calculations in seconds (default: 300). */
+      timeout?: number;
+      /** Chunk size for processing large datasets (default: 10000). */
+      chunkSize?: number;
+    };
+  };
+  /** Document generator tool configuration. */
+  document?: {
+    /** Output directory for generated documents (default: workspace/reports). */
+    outputDir?: string;
+  };
 };

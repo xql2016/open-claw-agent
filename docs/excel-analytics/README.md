@@ -7,14 +7,17 @@
 ## 新增文件
 
 ### 核心工具
+
 - `src/agents/tools/excel-analytics-tool.ts` - Excel 分析工具
 - `src/agents/tools/document-generator-tool.ts` - 文档生成工具
 - `src/agents/tools/excel-tools.ts` - 导出文件
 
 ### 文档
+
 - `docs/tools/excel-analytics.md` - 完整使用文档
 
 ### 测试
+
 - `src/agents/tools/excel-analytics-tool.test.ts` - 单元测试
 
 ## 功能特性
@@ -24,11 +27,13 @@
 **三种操作模式：**
 
 #### a) `info` - 快速元信息
+
 - 不读取数据，只获取行数、列名、工作表等
 - Token 消耗：~0.5K
 - 用途：快速了解文件结构
 
 #### b) `sample` - 采样分析
+
 - 读取前 N 行（默认 1000 行）
 - 自动推断列类型
 - 计算数值列的基础统计
@@ -36,6 +41,7 @@
 - 用途：理解数据结构和分布
 
 #### c) `calculate` - 全量计算
+
 - 使用 SQL 在完整数据集上执行计算
 - 返回聚合结果（不是原始数据）
 - Token 消耗：~0.5-2K（仅结果）
@@ -44,10 +50,12 @@
 ### 2. 文档生成 (`generate_document`)
 
 **支持格式：**
+
 - Markdown (`.md`)
 - Word (`.docx`)
 
 **功能：**
+
 - 标题 + 内容
 - 表格（支持多个）
 - 自动添加时间戳
@@ -66,12 +74,12 @@
 
 ### Token 优化
 
-| 操作 | 数据量 | Token | 说明 |
-|------|--------|-------|------|
-| info | 元信息 | ~0.5K | 不读数据 |
-| sample | 1000行 × 4列 | ~4K | 理解结构 |
-| calculate | 聚合结果（10行） | ~0.5K | 只返回结果 |
-| **总计** | - | **~5K** | 节省 95% |
+| 操作      | 数据量           | Token   | 说明       |
+| --------- | ---------------- | ------- | ---------- |
+| info      | 元信息           | ~0.5K   | 不读数据   |
+| sample    | 1000行 × 4列     | ~4K     | 理解结构   |
+| calculate | 聚合结果（10行） | ~0.5K   | 只返回结果 |
+| **总计**  | -                | **~5K** | 节省 95%   |
 
 对比全量读取：50万行 × 4列 = ~100K tokens
 
@@ -79,11 +87,11 @@
 
 ```json
 {
-  "xlsx": "^0.18.5",      // Excel 解析
-  "exceljs": "^4.3.0",    // Excel 高级操作（备用）
-  "alasql": "^4.0.0",     // SQL 查询引擎
-  "mathjs": "^12.0.0",    // 数学计算（预留）
-  "docx": "^8.5.0"        // Word 文档生成
+  "xlsx": "^0.18.5", // Excel 解析
+  "exceljs": "^4.3.0", // Excel 高级操作（备用）
+  "alasql": "^4.0.0", // SQL 查询引擎
+  "mathjs": "^12.0.0", // 数学计算（预留）
+  "docx": "^8.5.0" // Word 文档生成
 }
 ```
 
@@ -139,16 +147,16 @@ await generate_document({
           enabled: true,
           sampling: {
             defaultRows: 1000,
-            maxRows: 5000
-          }
+            maxRows: 5000,
+          },
         },
         document: {
           enabled: true,
-          outputDir: "~/.openclaw/workspace/reports"
-        }
-      }
-    }
-  }
+          outputDir: "~/.openclaw/workspace/reports",
+        },
+      },
+    },
+  },
 }
 ```
 
@@ -172,14 +180,15 @@ GROUP BY 产品 ORDER BY 销售额 DESC LIMIT 10
 ## 性能指标
 
 | 数据规模 | 采样时间 | 计算时间 | 总时间 |
-|---------|---------|---------|--------|
-| 10万行 | ~0.5s | ~2s | ~2.5s |
-| 50万行 | ~0.5s | ~8s | ~8.5s |
-| 100万行 | ~0.5s | ~18s | ~18.5s |
+| -------- | -------- | -------- | ------ |
+| 10万行   | ~0.5s    | ~2s      | ~2.5s  |
+| 50万行   | ~0.5s    | ~8s      | ~8.5s  |
+| 100万行  | ~0.5s    | ~18s     | ~18.5s |
 
 ## 后续计划
 
 ### Phase 2 增强功能
+
 - [ ] 支持多 sheet
 - [ ] 流式处理超大文件（分块读取）
 - [ ] 图表生成（Chart.js 集成）
@@ -187,6 +196,7 @@ GROUP BY 产品 ORDER BY 销售额 DESC LIMIT 10
 - [ ] 增量分析（只处理新增数据）
 
 ### Phase 3 高级功能
+
 - [ ] 自动指标推荐
 - [ ] 异常值检测
 - [ ] 趋势预测
@@ -212,14 +222,14 @@ import { createExcelAnalyticsTool, createDocumentGeneratorTool } from "./tools/e
 // 在 createOpenClawCodingTools 中添加
 const tools = [
   ...codingTools,
-  createExcelAnalyticsTool({ 
+  createExcelAnalyticsTool({
     config: config?.tools?.excel,
     workspaceDir,
-    sandboxPaths 
+    sandboxPaths,
   }),
   createDocumentGeneratorTool({
     config: config?.tools?.document,
-    workspaceDir
+    workspaceDir,
   }),
   // ... other tools
 ];

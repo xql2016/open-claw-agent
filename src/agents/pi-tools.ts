@@ -52,6 +52,7 @@ import {
   resolveToolProfilePolicy,
   stripPluginOnlyAllowlist,
 } from "./tool-policy.js";
+import { createExcelAnalyticsTool, createDocumentGeneratorTool } from "./tools/excel-tools.js";
 
 function isOpenAIProvider(provider?: string) {
   const normalized = provider?.trim().toLowerCase();
@@ -326,6 +327,16 @@ export function createOpenClawCodingTools(options?: {
     processTool as unknown as AnyAgentTool,
     // Channel docking: include channel-defined agent tools (login, etc.).
     ...listChannelAgentTools({ cfg: options?.config }),
+    // Excel Analytics Tools
+    createExcelAnalyticsTool({
+      config: options?.config?.tools?.excel,
+      workspaceDir: options?.workspaceDir ?? workspaceRoot,
+      sandboxPaths: sandboxRoot ? [sandboxRoot] : undefined,
+    }),
+    createDocumentGeneratorTool({
+      config: options?.config?.tools?.document,
+      workspaceDir: options?.workspaceDir ?? workspaceRoot,
+    }),
     ...createOpenClawTools({
       sandboxBrowserBridgeUrl: sandbox?.browser?.bridgeUrl,
       allowHostBrowserControl: sandbox ? sandbox.browserAllowHostControl : true,

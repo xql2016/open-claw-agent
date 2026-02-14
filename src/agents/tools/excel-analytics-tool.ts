@@ -1,5 +1,5 @@
-import { Type } from "@sinclair/typebox";
 import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import { Type } from "@sinclair/typebox";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { OpenClawConfig } from "../../config/config.js";
@@ -9,7 +9,7 @@ import { jsonResult, readNumberParam, readStringParam, type AnyAgentTool } from 
 
 /**
  * Excel Analytics Tool
- * 
+ *
  * Provides Excel file analysis capabilities with sampling strategy to minimize token usage.
  * - Sample data (first N rows) for structure understanding
  * - Execute calculations on full dataset using SQL queries
@@ -17,7 +17,6 @@ import { jsonResult, readNumberParam, readStringParam, type AnyAgentTool } from 
  */
 
 type ExcelAnalyticsConfig = {
-  enabled?: boolean;
   sampling?: {
     defaultRows?: number;
     maxRows?: number;
@@ -49,16 +48,14 @@ type ExcelCalculationResult = {
 async function sampleExcelData(params: {
   filepath: string;
   rows?: number;
-  method?: 'head' | 'random';
+  method?: "head" | "random";
   workspaceDir: string;
 }): Promise<ExcelSampleResult> {
-  const { filepath, rows = 1000, method = 'head', workspaceDir } = params;
-  
+  const { filepath, rows = 1000, method = "head", workspaceDir } = params;
+
   // Resolve and validate file path
-  const fullPath = path.isAbsolute(filepath) 
-    ? filepath 
-    : path.resolve(workspaceDir, filepath);
-  
+  const fullPath = path.isAbsolute(filepath) ? filepath : path.resolve(workspaceDir, filepath);
+
   // Check file exists
   try {
     await fs.access(fullPath);
@@ -67,31 +64,31 @@ async function sampleExcelData(params: {
   }
 
   // Lazy load xlsx to avoid bundling it when not needed
-  const XLSX = await import('xlsx');
-  
+  const XLSX = await import("xlsx");
+
   // Read Excel file
   const workbook = XLSX.readFile(fullPath);
   const sheetName = workbook.SheetNames[0];
   if (!sheetName) {
-    throw new Error('Excel file has no sheets');
+    throw new Error("Excel file has no sheets");
   }
-  
+
   const worksheet = workbook.Sheets[sheetName];
   if (!worksheet) {
     throw new Error(`Sheet "${sheetName}" not found`);
   }
-  
+
   // Convert to JSON
   const fullData = XLSX.utils.sheet_to_json(worksheet);
   const totalRows = fullData.length;
-  
+
   if (totalRows === 0) {
-    throw new Error('Excel file is empty');
+    throw new Error("Excel file is empty");
   }
-  
+
   // Sample data
   let sampleData: unknown[];
-  if (method === 'random') {
+  if (method === "random") {
     // Random sampling
     const indices = new Set<number>();
     const sampleSize = Math.min(rows, totalRows);
@@ -99,54 +96,54 @@ async function sampleExcelData(params: {
       indices.add(Math.floor(Math.random() * totalRows));
     }
     sampleData = Array.from(indices)
-      .sort((a, b) => a - b)
-      .map(i => fullData[i]);
+      .toSorted((a, b) => a - b)
+      .map((i) => fullData[i]);
   } else {
     // Head sampling (default)
     sampleData = fullData.slice(0, rows);
   }
-  
+
   // Infer column types from sample
   const columns = sampleData.length > 0 ? Object.keys(sampleData[0] as object) : [];
   const columnTypes: Record<string, string> = {};
-  
+
   for (const col of columns) {
     const values = sampleData
-      .map(row => (row as Record<string, unknown>)[col])
-      .filter(v => v !== null && v !== undefined);
-    
+      .map((row) => (row as Record<string, unknown>)[col])
+      .filter((v) => v !== null && v !== undefined);
+
     if (values.length === 0) {
-      columnTypes[col] = 'unknown';
+      columnTypes[col] = "unknown";
       continue;
     }
-    
+
     const firstValue = values[0];
-    if (typeof firstValue === 'number') {
-      columnTypes[col] = 'number';
+    if (typeof firstValue === "number") {
+      columnTypes[col] = "number";
     } else if (firstValue instanceof Date) {
-      columnTypes[col] = 'date';
-    } else if (typeof firstValue === 'boolean') {
-      columnTypes[col] = 'boolean';
+      columnTypes[col] = "date";
+    } else if (typeof firstValue === "boolean") {
+      columnTypes[col] = "boolean";
     } else {
-      columnTypes[col] = 'string';
+      columnTypes[col] = "string";
     }
   }
-  
+
   // Calculate basic statistics for numeric columns
   const statistics: Record<string, unknown> = {};
   for (const col of columns) {
-    if (columnTypes[col] === 'number') {
+    if (columnTypes[col] === "number") {
       const values = sampleData
-        .map(row => (row as Record<string, unknown>)[col] as number)
-        .filter(v => typeof v === 'number' && !Number.isNaN(v));
-      
+        .map((row) => (row as Record<string, unknown>)[col] as number)
+        .filter((v) => typeof v === "number" && !Number.isNaN(v));
+
       if (values.length > 0) {
         const sum = values.reduce((a, b) => a + b, 0);
         const mean = sum / values.length;
-        const sorted = [...values].sort((a, b) => a - b);
+        const sorted = [...values].toSorted((a, b) => a - b);
         const min = sorted[0];
         const max = sorted[sorted.length - 1];
-        
+
         statistics[col] = {
           count: values.length,
           min,
@@ -156,7 +153,7 @@ async function sampleExcelData(params: {
       }
     }
   }
-  
+
   return {
     totalRows,
     sampleRows: sampleData.length,
@@ -176,36 +173,34 @@ async function calculateMetrics(params: {
   workspaceDir: string;
 }): Promise<ExcelCalculationResult> {
   const { filepath, sql, workspaceDir } = params;
-  
+
   // Resolve file path
-  const fullPath = path.isAbsolute(filepath)
-    ? filepath
-    : path.resolve(workspaceDir, filepath);
-  
+  const fullPath = path.isAbsolute(filepath) ? filepath : path.resolve(workspaceDir, filepath);
+
   // Check file exists
   try {
     await fs.access(fullPath);
   } catch {
     throw new Error(`Excel file not found: ${filepath}`);
   }
-  
+
   const startTime = Date.now();
-  
+
   // Lazy load libraries
-  const XLSX = await import('xlsx');
-  const alasql = (await import('alasql')).default;
-  
+  const XLSX = await import("xlsx");
+  const alasql = (await import("alasql")).default;
+
   // Read full Excel data
   const workbook = XLSX.readFile(fullPath);
   const sheetName = workbook.SheetNames[0];
   const worksheet = workbook.Sheets[sheetName];
   const data = XLSX.utils.sheet_to_json(worksheet);
-  
+
   // Execute SQL query using alasql
   const result = alasql(sql, [data]);
-  
+
   const executionTime = Date.now() - startTime;
-  
+
   return {
     metrics: Array.isArray(result) ? result : [result],
     rowsProcessed: data.length,
@@ -216,41 +211,36 @@ async function calculateMetrics(params: {
 /**
  * Get Excel file metadata without reading data
  */
-async function getExcelInfo(params: {
-  filepath: string;
-  workspaceDir: string;
-}): Promise<{
+async function getExcelInfo(params: { filepath: string; workspaceDir: string }): Promise<{
   totalRows: number;
   columns: string[];
   sheetNames: string[];
   fileSize: number;
 }> {
   const { filepath, workspaceDir } = params;
-  
-  const fullPath = path.isAbsolute(filepath)
-    ? filepath
-    : path.resolve(workspaceDir, filepath);
-  
+
+  const fullPath = path.isAbsolute(filepath) ? filepath : path.resolve(workspaceDir, filepath);
+
   // Check file exists
   const stats = await fs.stat(fullPath);
-  
+
   // Lazy load xlsx
-  const XLSX = await import('xlsx');
-  
+  const XLSX = await import("xlsx");
+
   // Read only sheet names first
   const workbook = XLSX.readFile(fullPath, { sheetRows: 1 });
   const sheetNames = workbook.SheetNames;
-  
+
   if (sheetNames.length === 0) {
-    throw new Error('Excel file has no sheets');
+    throw new Error("Excel file has no sheets");
   }
-  
+
   // Read first sheet to get structure
   const fullWorkbook = XLSX.readFile(fullPath);
   const worksheet = fullWorkbook.Sheets[sheetNames[0]];
   const data = XLSX.utils.sheet_to_json(worksheet);
   const columns = data.length > 0 ? Object.keys(data[0] as object) : [];
-  
+
   return {
     totalRows: data.length,
     columns,
@@ -268,10 +258,10 @@ export function createExcelAnalyticsTool(options: {
   sandboxPaths?: string[];
 }): AnyAgentTool {
   const { config, workspaceDir, sandboxPaths } = options;
-  
+
   const defaultRows = config?.sampling?.defaultRows ?? 1000;
   const maxRows = config?.sampling?.maxRows ?? 5000;
-  
+
   return {
     name: "excel_analytics",
     description: `Analyze Excel files with sampling strategy to minimize token usage.
@@ -286,38 +276,40 @@ Best practices:
 2. Use 'sample' to preview data and design calculations
 3. Use 'calculate' with SQL to compute metrics on full dataset
 4. Sample data is for understanding structure, calculations run on full data`,
-    
+
     schema: Type.Object({
-      action: Type.Union([
-        Type.Literal("info"),
-        Type.Literal("sample"),
-        Type.Literal("calculate"),
-      ], {
-        description: "Action to perform",
-      }),
+      action: Type.Union(
+        [Type.Literal("info"), Type.Literal("sample"), Type.Literal("calculate")],
+        {
+          description: "Action to perform",
+        },
+      ),
       filepath: Type.String({
         description: "Path to Excel file (relative to workspace or absolute)",
       }),
-      rows: Type.Optional(Type.Number({
-        description: `Number of rows to sample (default: ${defaultRows}, max: ${maxRows})`,
-        minimum: 1,
-        maximum: maxRows,
-      })),
-      method: Type.Optional(Type.Union([
-        Type.Literal("head"),
-        Type.Literal("random"),
-      ], {
-        description: "Sampling method: 'head' (first N rows) or 'random'",
-      })),
-      sql: Type.Optional(Type.String({
-        description: "SQL query to execute on full dataset (for 'calculate' action)",
-      })),
+      rows: Type.Optional(
+        Type.Number({
+          description: `Number of rows to sample (default: ${defaultRows}, max: ${maxRows})`,
+          minimum: 1,
+          maximum: maxRows,
+        }),
+      ),
+      method: Type.Optional(
+        Type.Union([Type.Literal("head"), Type.Literal("random")], {
+          description: "Sampling method: 'head' (first N rows) or 'random'",
+        }),
+      ),
+      sql: Type.Optional(
+        Type.String({
+          description: "SQL query to execute on full dataset (for 'calculate' action)",
+        }),
+      ),
     }),
-    
+
     async execute(params): Promise<AgentToolResult<unknown>> {
-      const action = readStringParam(params, 'action', { required: true });
-      const filepath = readStringParam(params, 'filepath', { required: true });
-      
+      const action = readStringParam(params, "action", { required: true });
+      const filepath = readStringParam(params, "filepath", { required: true });
+
       // Validate sandbox paths if configured
       if (sandboxPaths && sandboxPaths.length > 0) {
         const fullPath = path.isAbsolute(filepath)
@@ -325,56 +317,55 @@ Best practices:
           : path.resolve(workspaceDir, filepath);
         assertSandboxPath(fullPath, sandboxPaths);
       }
-      
+
       try {
-        if (action === 'info') {
+        if (action === "info") {
           const info = await getExcelInfo({ filepath, workspaceDir });
           return jsonResult({
             success: true,
-            action: 'info',
+            action: "info",
             data: info,
           });
         }
-        
-        if (action === 'sample') {
-          const rows = readNumberParam(params, 'rows', { integer: true }) ?? defaultRows;
-          const method = (readStringParam(params, 'method') ?? 'head') as 'head' | 'random';
-          
+
+        if (action === "sample") {
+          const rows = readNumberParam(params, "rows", { integer: true }) ?? defaultRows;
+          const method = (readStringParam(params, "method") ?? "head") as "head" | "random";
+
           // Enforce max rows
           const limitedRows = Math.min(rows, maxRows);
-          
+
           const sample = await sampleExcelData({
             filepath,
             rows: limitedRows,
             method,
             workspaceDir,
           });
-          
+
           return jsonResult({
             success: true,
-            action: 'sample',
+            action: "sample",
             data: sample,
           });
         }
-        
-        if (action === 'calculate') {
-          const sql = readStringParam(params, 'sql', { required: true });
-          
+
+        if (action === "calculate") {
+          const sql = readStringParam(params, "sql", { required: true });
+
           const result = await calculateMetrics({
             filepath,
             sql,
             workspaceDir,
           });
-          
+
           return jsonResult({
             success: true,
-            action: 'calculate',
+            action: "calculate",
             data: result,
           });
         }
-        
+
         throw new Error(`Unknown action: ${action}`);
-        
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return jsonResult({
