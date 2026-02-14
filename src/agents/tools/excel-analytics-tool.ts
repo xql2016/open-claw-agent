@@ -261,6 +261,7 @@ export function createExcelAnalyticsTool(options: {
   const maxRows = config?.sampling?.maxRows ?? 5000;
 
   return {
+    label: "Excel Analytics",
     name: "excel_analytics",
     description: `Analyze Excel files with sampling strategy to minimize token usage.
     
@@ -275,7 +276,7 @@ Best practices:
 3. Use 'calculate' with SQL to compute metrics on full dataset
 4. Sample data is for understanding structure, calculations run on full data`,
 
-    schema: Type.Object({
+    parameters: Type.Object({
       action: Type.Union(
         [Type.Literal("info"), Type.Literal("sample"), Type.Literal("calculate")],
         {
@@ -304,7 +305,8 @@ Best practices:
       ),
     }),
 
-    async execute(params): Promise<AgentToolResult<unknown>> {
+    execute: async (_toolCallId, args) => {
+      const params = args as Record<string, unknown>;
       const action = readStringParam(params, "action", { required: true });
       const filepath = readStringParam(params, "filepath", { required: true });
 
@@ -313,7 +315,11 @@ Best practices:
         const fullPath = path.isAbsolute(filepath)
           ? filepath
           : path.resolve(workspaceDir, filepath);
-        void assertSandboxPath(fullPath, sandboxPaths);
+        await assertSandboxPath({
+          filePath: fullPath,
+          cwd: workspaceDir,
+          root: sandboxPaths[0],
+        });
       }
 
       try {

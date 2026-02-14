@@ -192,6 +192,7 @@ export function createDocumentGeneratorTool(options: {
   const defaultOutputDir = config?.outputDir ?? path.join(workspaceDir, "reports");
 
   return {
+    label: "Document Generator",
     name: "generate_document",
     description: `Generate Markdown or Word documents from structured data.
     
@@ -203,7 +204,7 @@ Supports:
 
 Output directory: ${defaultOutputDir}`,
 
-    schema: Type.Object({
+    parameters: Type.Object({
       format: Type.Union([Type.Literal("markdown"), Type.Literal("word")], {
         description: "Document format: 'markdown' or 'word'",
       }),
@@ -230,7 +231,8 @@ Output directory: ${defaultOutputDir}`,
       ),
     }),
 
-    async execute(params): Promise<AgentToolResult<unknown>> {
+    execute: async (_toolCallId, args) => {
+      const params = args as Record<string, unknown>;
       const format = readStringParam(params, "format", { required: true });
       const filename = readStringParam(params, "filename", { required: true });
       const title = readStringParam(params, "title", { required: true });
