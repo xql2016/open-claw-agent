@@ -80,7 +80,7 @@ async function generateWord(params: {
   // Lazy load docx library
   const { Document, Paragraph, Table, TableRow, TableCell, AlignmentType } = await import("docx");
 
-  const children: Array<Paragraph | Table> = [];
+  const children: unknown[] = [];
 
   // Title
   children.push(
@@ -241,8 +241,9 @@ Output directory: ${defaultOutputDir}`,
       const tables = Array.isArray(tablesRaw)
         ? tablesRaw.map((t: unknown) => {
             const table = t as Record<string, unknown>;
+            const titleValue = table.title;
             return {
-              title: String(table.title ?? "Table"),
+              title: typeof titleValue === "string" ? titleValue : String(titleValue ?? "Table"),
               headers: Array.isArray(table.headers) ? table.headers.map(String) : [],
               rows: Array.isArray(table.rows)
                 ? table.rows.map((row: unknown) => (Array.isArray(row) ? row.map(String) : []))
