@@ -242,8 +242,12 @@ Output directory: ${defaultOutputDir}`,
         ? tablesRaw.map((t: unknown) => {
             const table = t as Record<string, unknown>;
             const titleValue = table.title;
+            const titleStr =
+              typeof titleValue === "string" || typeof titleValue === "number"
+                ? String(titleValue)
+                : "Table";
             return {
-              title: typeof titleValue === "string" ? titleValue : String(titleValue ?? "Table"),
+              title: titleStr,
               headers: Array.isArray(table.headers) ? table.headers.map(String) : [],
               rows: Array.isArray(table.rows)
                 ? table.rows.map((row: unknown) => (Array.isArray(row) ? row.map(String) : []))
