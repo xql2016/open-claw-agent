@@ -78,10 +78,9 @@ async function generateWord(params: {
   const { title, content, tables = [], outputPath } = params;
 
   // Lazy load docx library
-  const { Document, Paragraph, Table, TableRow, TableCell, TextRun, AlignmentType } =
-    await import("docx");
+  const { Document, Paragraph, Table, TableRow, TableCell, AlignmentType } = await import("docx");
 
-  const children: any[] = [];
+  const children: Array<Paragraph | Table> = [];
 
   // Title
   children.push(
@@ -240,13 +239,16 @@ Output directory: ${defaultOutputDir}`,
       // Parse tables if provided
       const tablesRaw = params.tables;
       const tables = Array.isArray(tablesRaw)
-        ? tablesRaw.map((t: any) => ({
-            title: String(t.title ?? "Table"),
-            headers: Array.isArray(t.headers) ? t.headers.map(String) : [],
-            rows: Array.isArray(t.rows)
-              ? t.rows.map((row: any) => (Array.isArray(row) ? row.map(String) : []))
-              : [],
-          }))
+        ? tablesRaw.map((t: unknown) => {
+            const table = t as Record<string, unknown>;
+            return {
+              title: String(table.title ?? "Table"),
+              headers: Array.isArray(table.headers) ? table.headers.map(String) : [],
+              rows: Array.isArray(table.rows)
+                ? table.rows.map((row: unknown) => (Array.isArray(row) ? row.map(String) : []))
+                : [],
+            };
+          })
         : [];
 
       const outputPath = path.resolve(defaultOutputDir, filename);

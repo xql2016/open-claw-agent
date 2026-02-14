@@ -1,9 +1,7 @@
-import type { AgentTool, AgentToolResult } from "@mariozechner/pi-agent-core";
+import type { AgentToolResult } from "@mariozechner/pi-agent-core";
 import { Type } from "@sinclair/typebox";
 import fs from "node:fs/promises";
 import path from "node:path";
-import type { OpenClawConfig } from "../../config/config.js";
-import { resolveUserPath } from "../../utils.js";
 import { assertSandboxPath } from "../sandbox-paths.js";
 import { jsonResult, readNumberParam, readStringParam, type AnyAgentTool } from "./common.js";
 
@@ -315,7 +313,7 @@ Best practices:
         const fullPath = path.isAbsolute(filepath)
           ? filepath
           : path.resolve(workspaceDir, filepath);
-        assertSandboxPath(fullPath, sandboxPaths);
+        void assertSandboxPath(fullPath, sandboxPaths);
       }
 
       try {
