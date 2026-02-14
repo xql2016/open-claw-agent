@@ -559,6 +559,31 @@ export const ToolsSchema = z
       })
       .strict()
       .optional(),
+    excel: z
+      .object({
+        sampling: z
+          .object({
+            defaultRows: z.number().int().positive().optional(),
+            maxRows: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
+        calculation: z
+          .object({
+            timeout: z.number().int().positive().optional(),
+            chunkSize: z.number().int().positive().optional(),
+          })
+          .strict()
+          .optional(),
+      })
+      .strict()
+      .optional(),
+    document: z
+      .object({
+        outputDir: z.string().optional(),
+      })
+      .strict()
+      .optional(),
   })
   .strict()
   .superRefine((value, ctx) => {
