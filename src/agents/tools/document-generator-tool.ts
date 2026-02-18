@@ -78,9 +78,11 @@ async function generateWord(params: {
   const { title, content, tables = [], outputPath } = params;
 
   // Lazy load docx library
-  const { Document, Paragraph, Table, TableRow, TableCell, AlignmentType } = await import("docx");
+  const { Document, Paragraph, Table, TableRow, TableCell, AlignmentType, TextRun } =
+    await import("docx");
 
-  const children: unknown[] = [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const children: any[] = [];
 
   // Title
   children.push(
@@ -122,7 +124,11 @@ async function generateWord(params: {
         children: tableData.headers.map(
           (header) =>
             new TableCell({
-              children: [new Paragraph({ text: header, bold: true })],
+              children: [
+                new Paragraph({
+                  children: [new TextRun({ text: header, bold: true })],
+                }),
+              ],
             }),
         ),
       }),

@@ -62,7 +62,8 @@ async function sampleExcelData(params: {
   }
 
   // Lazy load xlsx to avoid bundling it when not needed
-  const XLSX = await import("xlsx");
+  const xlsxModule = await import("xlsx");
+  const XLSX = xlsxModule.default || xlsxModule;
 
   // Read Excel file
   const workbook = XLSX.readFile(fullPath);
@@ -185,7 +186,8 @@ async function calculateMetrics(params: {
   const startTime = Date.now();
 
   // Lazy load libraries
-  const XLSX = await import("xlsx");
+  const xlsxModule = await import("xlsx");
+  const XLSX = xlsxModule.default || xlsxModule;
   const alasql = (await import("alasql")).default;
 
   // Read full Excel data
@@ -223,7 +225,8 @@ async function getExcelInfo(params: { filepath: string; workspaceDir: string }):
   const stats = await fs.stat(fullPath);
 
   // Lazy load xlsx
-  const XLSX = await import("xlsx");
+  const xlsxModule = await import("xlsx");
+  const XLSX = xlsxModule.default || xlsxModule;
 
   // Read only sheet names first
   const workbook = XLSX.readFile(fullPath, { sheetRows: 1 });
@@ -283,7 +286,7 @@ Best practices:
           description: "Action to perform",
         },
       ),
-      filepath: Type.String({
+      file_path: Type.String({
         description: "Path to Excel file (relative to workspace or absolute)",
       }),
       rows: Type.Optional(
@@ -308,7 +311,7 @@ Best practices:
     execute: async (_toolCallId, args) => {
       const params = args as Record<string, unknown>;
       const action = readStringParam(params, "action", { required: true });
-      const filepath = readStringParam(params, "filepath", { required: true });
+      const filepath = readStringParam(params, "file_path", { required: true });
 
       // Validate sandbox paths if configured
       if (sandboxPaths && sandboxPaths.length > 0) {
